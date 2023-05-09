@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use ethers::providers::{Provider,Http, Middleware};
 use log::info;
 use reqwest::{Url, Proxy, Client};
@@ -13,25 +15,35 @@ pub struct ProxyJson {
     pub password: String,
 }
 
-pub fn create_provider(key_and_config_proxy:&Vec<String>)->impl Middleware{
+pub fn create_provider(wallet:&[String])->(Arc<impl Middleware>,Arc<impl Middleware>){
     //Мтачинг на наличие прокси
-    match key_and_config_proxy.get(3) {
+    match wallet.get(4) {
         Some(config)=>{
-             //Парсинг конфига прокси в ProxyJson
-                let proxy_json=serde_json::from_str::<ProxyJson>(&config.trim()).unwrap();
-             //Получение адреса rpc
-                 let rpc=matching_chain_to_rpc(&key_and_config_proxy[1]).unwrap();
-                 //Создание провайдера с прокси
-            info!("Create provider with proxy:{} for:{}",rpc,&key_and_config_proxy[0]);
-             create_provider_with_proxy(rpc, proxy_json)
+             /*Парсинг конфига прокси в ProxyJson
+               Получение адреса rpc и создание провайдера с прокси для сети из которой отправляется транзакция*/
+             let proxy_json=serde_json::from_str::<ProxyJson>(&config.trim()).unwrap();
+                 let rpc=matching_chain_to_rpc(&wallet[2]).unwrap();
+                info!("Create provider (chain_sender) with proxy for:{}",&wallet[0]);
+             let provider_chain_sender=Arc::new(create_provider_with_proxy(rpc, proxy_json));
+             /*Парсинг конфига прокси в ProxyJson
+               Получение адреса rpc и создание провайдера с прокси для сети в которую отправляется транзакция*/
+               let proxy_json=serde_json::from_str::<ProxyJson>(&config.trim()).unwrap();
+               let rpc=matching_chain_to_rpc(&wallet[3]).unwrap();
+              info!("Create provider (chain_receiver) with proxy for:{}",&wallet[0]);
+           let provider_chain_receiver=Arc::new(create_provider_with_proxy(rpc, proxy_json));
+           (provider_chain_sender,provider_chain_receiver)
         }
         None=>{
-            //Создание провайдера без прокси
-             //Получение адреса rpc
-            let rpc=matching_chain_to_rpc(&key_and_config_proxy[1]).unwrap();
-            info!("Create provider without proxy:{} for:{}",rpc,&key_and_config_proxy[0]);
-            let provider=Provider::<Http>::try_from(rpc.trim()).unwrap();
-            provider
+            //Получение адреса rpc и создание провайдера без прокси для сети из которой отправляется транзакция
+            let rpc=matching_chain_to_rpc(&wallet[2]).unwrap();
+            info!("Create provider (chain_sender) without proxy for:{}",&wallet[0]);
+            let provider_chain_sender=Arc::new(Provider::<Http>::try_from(rpc.trim()).unwrap());
+            //Получение адреса rpc и создание провайдера без прокси для сети в которой отправляется транзакция
+            let rpc=matching_chain_to_rpc(&wallet[2]).unwrap();
+            info!("Create provider (chain_sender) without proxy for:{}",&wallet[0]);
+            let provider_chain_receiver=Arc::new(Provider::<Http>::try_from(rpc.trim()).unwrap());
+            (provider_chain_sender,provider_chain_receiver)
+
         }
 }
 }

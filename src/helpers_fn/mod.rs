@@ -4,3 +4,6 @@ pub mod from_private_key_config_proxy;
 pub mod matching_chain_to_rpc;
 pub mod create_provider;
 pub mod matching_chain_to_chain_and_stargate_chain;
+pub mod created_contract_for_native_currency_chain;
+pub mod create_contract_router_eth;
+pub mod create_contract_router;
