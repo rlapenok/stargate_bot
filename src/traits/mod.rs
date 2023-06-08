@@ -1,1 +1,1 @@
-pub mod trait_for_user_wallet;
+pub mod trait_for_user_wallets;
